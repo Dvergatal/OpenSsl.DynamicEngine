@@ -8,7 +8,7 @@ namespace System.Security.Cryptography.OpenSsl
 #if WINDOWS
         private const string OpenSslLibrary = "libssleay32.dll";
 #else
-        private const string OpenSslLibrary = "libcrypto.so.10";
+        private const string OpenSslLibrary = "libcrypto.so";
 #endif
 
         [DllImport(OpenSslLibrary)]

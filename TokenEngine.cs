@@ -1,14 +1,15 @@
-﻿using System.Runtime.InteropServices;
+using System.IO;
+using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.OpenSsl
 {
-    public class DynamicEngine : IEngine, IDisposable
+    public class TokenEngine : IEngine, IDisposable
     {
         // private DynamicEngineHandle engine;
         public DynamicEngineHandle engine { get; private set; }
-        public DynamicEngine(string name)
+        public TokenEngine(string modulePath)
         {
-            Name = name;
+            ModulePath = modulePath;
         }
         public string Id
         {
@@ -19,22 +20,35 @@ namespace System.Security.Cryptography.OpenSsl
                 return Marshal.PtrToStringAuto(id);
             }
         }
-        public string Name { get; private set; }
+        public string ModulePath { get; private set; }
 
         public void Initialize()
         {
             if (null == engine)
             {
-                engine = SafeNativeMethods.ENGINE_by_id(Name);
+                engine = SafeNativeMethods.ENGINE_by_id("pkcs11");
                 if (engine.IsInvalid)
                 {
-                    throw new InvalidOperationException($"Unable to load engine '{Name}'");
+                    throw new InvalidOperationException($"Unable to load pkcs11 engine");
                 }
+
+                if(!File.Exists(ModulePath))
+                {
+                    throw new InvalidOperationException($"Unable to load pkcs11 module path");
+                }
+
+                //    DEBUG( "token: ctor: module_path=" << QS( modulePath ) );
+                if ( 1 != SafeNativeMethods.ENGINE_ctrl_cmd_string(engine, "MODULE_PATH", ModulePath, 0))
+                {
+                    throw new InvalidOperationException("token: setting module_path <= '{ModulePath}'");
+                }
+
+                //    DEBUG( "token: ctor: initializing " << m_pEngine );
                 var result = SafeNativeMethods.ENGINE_init(engine);
                 if (0 == result)
                 {
                     SafeNativeMethods.ENGINE_free(engine);
-                    throw new InvalidOperationException($"Unable to load engine '{Name}'. ENGINE_init returned {result}");
+                    throw new InvalidOperationException($"Unable to load pkcs11 engine '{ModulePath}'. ENGINE_init returned {result}");
                 }
             }
         }

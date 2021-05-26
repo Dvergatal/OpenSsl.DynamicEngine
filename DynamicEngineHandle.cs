@@ -1,6 +1,6 @@
 ﻿namespace System.Security.Cryptography.OpenSsl
 {
-    internal class DynamicEngineHandle : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
+    public class DynamicEngineHandle : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
     {
         public DynamicEngineHandle() : base(false)
         {

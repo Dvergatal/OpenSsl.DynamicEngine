@@ -1,83 +1,82 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.IO;
+using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.OpenSsl
 {
-    public class DynamicEngine : IEngine, IDisposable
+    public class DynamicEngine : Engine
     {
-        // private DynamicEngineHandle engine;
-        public DynamicEngineHandle engine { get; private set; }
-        public DynamicEngine(string name)
+        public DynamicEngine(string id, string enginePath, string modulePath = null)
         {
-            Name = name;
+            Id = id;
+            EnginePath = enginePath;
+            ModulePath = modulePath;
         }
-        public string Id
-        {
-            get
-            {
-                if (engine.IsClosed || engine.IsInvalid) throw new InvalidOperationException();
-                var id = SafeNativeMethods.ENGINE_get_id(engine);
-                return Marshal.PtrToStringAuto(id);
-            }
-        }
-        public string Name { get; private set; }
+        
+        private string EnginePath { get; set; }
 
-        public void Initialize()
+        internal override void Initialize()
         {
-            if (null == engine)
+            if (engine == null)
             {
-                engine = SafeNativeMethods.ENGINE_by_id(Name);
+                engine = SafeNativeMethods.ENGINE_by_id("dynamic");
                 if (engine.IsInvalid)
                 {
-                    throw new InvalidOperationException($"Unable to load engine '{Name}'");
+                    throw new InvalidOperationException($"Unable to load dynamic engine");
                 }
-                var result = SafeNativeMethods.ENGINE_init(engine);
-                if (0 == result)
+
+                if (!File.Exists(EnginePath))
                 {
-                    SafeNativeMethods.ENGINE_free(engine);
-                    throw new InvalidOperationException($"Unable to load engine '{Name}'. ENGINE_init returned {result}");
+                    throw new InvalidOperationException($"Unable to find engine library path");
                 }
+
+                if (SafeNativeMethods.ENGINE_ctrl_cmd_string(engine, "SO_PATH", EnginePath, 0) != 1)
+                {
+                    throw new InvalidOperationException("dynamic: setting so_path <= '{EnginePath}'");
+                }
+
+                if (SafeNativeMethods.ENGINE_ctrl_cmd_string(engine, "ID", Id, 0) != 1)
+                {
+                    throw new InvalidOperationException("dynamic: setting engine id <= '{id}'");
+                }
+
+                if (SafeNativeMethods.ENGINE_ctrl_cmd(engine, "LIST_ADD", 1, IntPtr.Zero, null, 0) != 1)
+                {
+                    throw new InvalidOperationException("dynamic: setting list_add <= 1");
+                }
+
+                if (SafeNativeMethods.ENGINE_ctrl_cmd(engine, "LOAD", 1, IntPtr.Zero, null, 0) != 1)
+                {
+                    throw new InvalidOperationException("dynamic: setting load <= 1");
+                }
+
+                if(Id == "pkcs11")
+                {
+                    if(!File.Exists(ModulePath))
+                    {
+                        throw new InvalidOperationException($"Unable to load pkcs11 module path");
+                    }
+
+                    if(SafeNativeMethods.ENGINE_ctrl_cmd_string(engine, "MODULE_PATH", ModulePath, 0) != 1)
+                    {
+                        throw new InvalidOperationException("dynamic: setting module_path <= '{ModulePath}'");
+                    }
+                }
+
+                initialized = true;
             }
         }
 
-        public void Finish()
+        public override void Finish()
         {
             SafeNativeMethods.ENGINE_finish(engine);
         }
 
-        public void SetDefaults(EngineDefaults defaults)
-        {
-            if (defaults == EngineDefaults.All ||
-                defaults == (defaults & (
-                    EngineDefaults.RSA |
-                    EngineDefaults.DSA |
-                    EngineDefaults.DH |
-                    EngineDefaults.RandomNumberGeneration |
-                    EngineDefaults.ECDH |
-                    EngineDefaults.ECDSA |
-                    EngineDefaults.Ciphers |
-                    EngineDefaults.Digests |
-                    EngineDefaults.Store |
-                    EngineDefaults.PKEY_METHS |
-                    EngineDefaults.PKEY_ASN1_METHS)))
-            {
-                var result = SafeNativeMethods.ENGINE_set_default(engine, defaults);
-                if (0 == result)
-                {
-                    SafeNativeMethods.ENGINE_free(engine);
-                    throw new InvalidOperationException($"Unable to set engine as default '{defaults}'. ENGINE_set_default returned {result}");
-                }
-            }
-            else
-            {
-                throw new ArgumentOutOfRangeException(nameof(defaults));
-            }
-        }
-
-        public void Dispose()
+        public override void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
         }
+
         public void Dispose(bool disposing)
         {
             if (disposing)

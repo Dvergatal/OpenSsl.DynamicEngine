@@ -1,10 +1,8 @@
 namespace System.Security.Cryptography.OpenSsl
 {
-    public interface IEngine
+    public interface IEngine : IDisposable
     {
-        DynamicEngineHandle engine { get; }
-        void Initialize();
-        void Finish();
         void SetDefaults(EngineDefaults defaults);
+        void Finish();
     }
 }

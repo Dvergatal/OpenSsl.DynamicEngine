@@ -31,6 +31,9 @@ namespace System.Security.Cryptography.OpenSsl
         [DllImport(OpenSslLibrary)]
         internal static extern int ENGINE_ctrl_cmd_string(DynamicEngineHandle engine, string cmd_name, string arg, int cmd_optional);
 
+        [DllImport(OpenSslLibrary)]
+        internal static extern int ENGINE_ctrl_cmd(DynamicEngineHandle engine, string cmd_name, long i, IntPtr p, Action f, int cmd_optional);
+
         [DllImport(OpenSslLibrary, CharSet = CharSet.Ansi)]
         internal static extern IntPtr ENGINE_get_name(DynamicEngineHandle engine);
 

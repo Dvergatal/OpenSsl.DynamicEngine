@@ -1,5 +1,5 @@
 
-namespace System.Security.Cryptography.OpenSsl
+namespace System.Security.Cryptography
 {  
     /// <summary>  
     /// The Engine Factory Class  

@@ -1,7 +1,6 @@
-﻿using System;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 
-namespace System.Security.Cryptography.OpenSsl
+namespace System.Security.Cryptography
 {
     internal static class SafeNativeMethods
     {
@@ -54,6 +53,9 @@ namespace System.Security.Cryptography.OpenSsl
 
         [DllImport(OpenSslLibrary)]
         internal static extern int ENGINE_set_default(DynamicEngineHandle engine, EngineDefaults defaults);
+
+        [DllImport(OpenSslLibrary)]
+        internal static extern SafeEvpPKeyHandle ENGINE_load_private_key(DynamicEngineHandle engine, string key_id, IntPtr ui_method/*UI_METHOD *ui_method*/, IntPtr callback_data);
 
         [DllImport(OpenSslLibrary)]
         internal static extern void ENGINE_free(DynamicEngineHandle engine);

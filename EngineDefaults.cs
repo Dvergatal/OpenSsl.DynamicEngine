@@ -1,4 +1,4 @@
-﻿namespace System.Security.Cryptography.OpenSsl
+﻿namespace System.Security.Cryptography
 {
     [Flags]
     public enum EngineDefaults
